@@ -1,9 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
+	"net/http"
 	"os"
+	"strings"
 	"study/logger"
 )
 
@@ -122,65 +123,141 @@ var s string = ""
 // 	"study/logline"
 // )
 
-type reload struct {
-	times    int
-	fileName []string
-}
+// type reload struct {
+// 	times    int
+// 	fileName []string
+// }
 
-func countLines(f *os.File, fName string, counts map[string]reload) {
-	input := bufio.NewScanner(f)
-	for input.Scan() {
-		text := input.Text()
-		if text == "" {
-			break
-		}
-		if count, exists := counts[text]; exists {
-			_sign := true
-			count.times++
-			for _, _file := range count.fileName {
-				if _file == fName {
-					_sign = false
-					continue
-				}
-			}
-			if _sign {
-				count.fileName = append(count.fileName, fName)
-			}
-			counts[text] = count
-		} else {
-			counts[text] = reload{times: 1, fileName: []string{fName}}
-		}
+// func countLines(f *os.File, fName string, counts map[string]reload) {
+// 	input := bufio.NewScanner(f)
+// 	for input.Scan() {
+// 		text := input.Text()
+// 		if text == "" {
+// 			break
+// 		}
+// 		if count, exists := counts[text]; exists {
+// 			_sign := true
+// 			count.times++
+// 			for _, _file := range count.fileName {
+// 				if _file == fName {
+// 					_sign = false
+// 					continue
+// 				}
+// 			}
+// 			if _sign {
+// 				count.fileName = append(count.fileName, fName)
+// 			}
+// 			counts[text] = count
+// 		} else {
+// 			counts[text] = reload{times: 1, fileName: []string{fName}}
+// 		}
+// 	}
+// }
+
+// func searchRepeatLine() {
+// 	counts := make(map[string]reload)
+// 	files := os.Args[1:]
+// 	if len(files) == 0 {
+// 		countLines(os.Stdin, "input", counts)
+// 		return
+// 	}
+
+// 	for _, arg := range files {
+// 		f, err := os.Open(arg)
+// 		if err != nil {
+// 			fmt.Fprintf(os.Stderr, "dup: %v\n", err)
+// 			continue
+// 		}
+// 		countLines(f, arg, counts)
+// 		f.Close()
+// 	}
+
+// 	for content, numAndFileName := range counts {
+// 		// logger.LogConsole(content, numAndFileName.times, numAndFileName.fileName)
+// 		if numAndFileName.times > 1 {
+// 			logger.LogConsole(content, numAndFileName.fileName)
+// 		}
+// 	}
+// }
+
+// 1.4 GIF动画
+
+// var palette = []color.Color{color.White, color.Black} // 定义黑白两色的切片 slice
+
+// const (
+// 	whiteIndex = 0 // first color in palette
+// 	blackIndex = 1 // next color in palette
+// )
+
+// func runGIF(out io.Writer) {
+// 	const (
+// 		cycles  = 5     // number of complete x oscillator revolutions
+// 		res     = 0.001 // angular resolution
+// 		size    = 100   // image canvas covers [-size..+size]
+// 		nframes = 64    // 循环次数
+// 		delay   = 8     // delay between frames in 10ms units
+// 	)
+
+// 	freq := rand.Float64() * 3.0        // 生成0 - 3.0的随机数
+// 	anim := gif.GIF{LoopCount: nframes} // 定义一个gif结构类型, 循环次数置为64
+// 	phase := 0.0
+
+// 	for i := 0; i < nframes; i++ {
+// 		rect := image.Rect(0, 0, 2*size+1, 2*size+1) // 创建一个矩形区域, 长宽都为 2 * 100 + 1
+// 		img := image.NewPaletted(rect, palette)      // 创建一个在矩形区域内使用调色板的图像
+// 		for t := 0.0; t < cycles*2*math.Pi; t += res {
+// 			x := math.Sin(t)
+// 			y := math.Sin(t*freq + phase)
+// 			img.SetColorIndex(size+int(x*size+0.5), size+int(y*size+0.5),
+// 				blackIndex)
+// 		}
+// 		phase += 0.1
+// 		anim.Delay = append(anim.Delay, delay)
+// 		anim.Image = append(anim.Image, img)
+// 	}
+// 	gif.EncodeAll(out, &anim) // NOTE: ignoring encoding errors
+// }
+
+// 1.5 获取 URL
+
+func getUrl(addr string) {
+	// resp, err := io.Copy(http.Get(addr)[0].Body, os.Stdout)
+	// if err != nil {
+	// 	logger.LogConsole("failed, reason is :", err)
+	// 	return
+	// }
+
+	// fmt.Printf("%s", os.Stdout)
+	// fmt.Printf("%s", resp)
+
+	if !strings.HasPrefix(addr, "http://") {
+		addr = "http://" + addr
 	}
-}
+	logger.LogConsole(addr)
 
-func searchRepeatLine() {
-	counts := make(map[string]reload)
-	files := os.Args[1:]
-	if len(files) == 0 {
-		countLines(os.Stdin, "input", counts)
+	resp, err := http.Get(addr)
+	logger.LogConsole(resp.Status)
+	if err != nil {
+		logger.LogConsole("failed, reason is :", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// _, err = io.Copy(os.Stdout, resp.Body)
+
+	if err != nil {
+		logger.LogConsole("failed, reason is :", err)
 		return
 	}
 
-	for _, arg := range files {
-		f, err := os.Open(arg)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "dup: %v\n", err)
-			continue
-		}
-		countLines(f, arg, counts)
-		f.Close()
-	}
-
-	for content, numAndFileName := range counts {
-		// logger.LogConsole(content, numAndFileName.times, numAndFileName.fileName)
-		if numAndFileName.times > 1 {
-			logger.LogConsole(content, numAndFileName.fileName)
-		}
-	}
+	// // logger.LogConsole(bi)
+	// fmt.Printf("%s", os.Stdout)
 }
 
 func main() {
-	searchRepeatLine()
+	for _, url := range os.Args[1:] {
+		getUrl(url)
+	}
 
 	defer tearDown()
 }
